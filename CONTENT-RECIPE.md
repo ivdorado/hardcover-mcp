@@ -48,25 +48,36 @@ Replicar el patrón ya validado en el blog:
    - Cerrar con una reflexión que conecte el libro con algo más amplio.
 4. `post_excerpt` = primer párrafo del cuerpo, tal cual.
 
-## 3. Imagen de cabecera
+## 3. Imagen de cabecera — paso manual (decisión 2026-09-18)
 
-**Estado actual (2026-09-18): pendiente de configurar.** `mwai_image` (AI
-Engine) falla porque el único entorno de IA configurado no soporta imágenes.
-Una vez el usuario configure un entorno Google/Imagen en AI Engine:
+Se probó `mwai_image` (AI Engine) a fondo:
 
-1. Generar con `mwai_image`, prompt en inglés, siempre pidiendo explícitamente:
-   - formato panorámico ~16:9,
-   - paleta pastel,
-   - motivo sugerente del tema del libro (nunca literal/portada, nunca texto
-     ni logos en la imagen),
-   - suficiente cobertura de color en todo el encuadre para que un título en
-     blanco con sombra sea legible encima (evitar zonas blancas grandes).
-2. Si `mwai_image` no está disponible o falla, **fallback**: subir la
-   portada oficial del libro en alta resolución (buscar en
-   PlanetadeLibros/Casa del Libro, no usar el thumbnail de Hardcover que es
-   de baja calidad) y usarla como imagen destacada, dejando aviso en el
-   resumen de que es un placeholder mejorable a mano.
-3. Fijar como imagen destacada con `wp_set_featured_image`.
+- Con el entorno inicial (Anthropic, sin imágenes) fallaba con "Unsupported
+  query type".
+- Tras configurar un entorno Google/Gemini con API key real, fallaba porque
+  `ai_images_default_model` seguía apuntando a un modelo de OpenAI
+  (`gpt-image-2`) que ya no existía en la config.
+- Corregido eso, dos modelos "gratuitos" distintos de Google
+  (`gemini-3.1-flash-image` y `gemini-2.5-flash-image`) devolvieron
+  `limit: 0` en el tier gratuito — probablemente una restricción geográfica
+  de Google para cuentas UE/EEE en generación de imágenes, no algo
+  configurable desde el plugin.
+
+**Decisión**: de momento la imagen de cabecera se queda como paso manual.
+El Routine deja el borrador **sin imagen destacada** (o, si se prefiere,
+con la portada oficial del libro en alta resolución como placeholder — ver
+más abajo), y el usuario añade la imagen final a mano (Canva u otra
+herramienta) antes de publicar.
+
+Fallback opcional si se quiere algo de imagen desde el primer momento:
+subir la portada oficial del libro en alta resolución (buscar en
+PlanetadeLibros/Casa del Libro; **no** usar el thumbnail de Hardcover, que
+es de baja calidad) y fijarla con `wp_set_featured_image`, dejando claro en
+el resumen que es un placeholder pendiente de sustituir.
+
+Revisar en el futuro si activar facturación en Google Cloud (Imagen 4
+Fast, ~$0.02/imagen) para poder automatizar este paso — decisión pendiente,
+no bloquea el resto del Routine.
 
 ## 4. Categoría y etiquetas
 
@@ -84,14 +95,15 @@ Una vez el usuario configure un entorno Google/Imagen en AI Engine:
   sin revisión humana — publicar es una acción explícita que pide el usuario
   aparte.
 
-## 6. Routine (pendiente de configurar)
+## 6. Routine
 
-Cadencia sugerida: semanal. Cada ejecución:
+Cadencia: semanal. Cada ejecución:
 
 1. Repetir pasos 0-5 para como mucho 1 libro nuevo (el más reciente sin post).
 2. Si no hay libros nuevos sin post, no hacer nada (no crear contenido de
    relleno).
-3. Dejar el borrador listo en WordPress — el aviso de que hay un borrador
-   nuevo lo ve el usuario al revisar el panel de WP o el historial de la
-   Routine en Claude Code; no hay integración de notificación (email/Slack)
-   configurada todavía.
+3. Dejar el borrador listo en WordPress, **sin imagen destacada** (paso 3 es
+   manual, ver arriba).
+4. El aviso de que hay un borrador nuevo lo ve el usuario al revisar el
+   panel de WP o el historial de la Routine en Claude Code; no hay
+   integración de notificación (email/Slack) configurada todavía.
