@@ -95,15 +95,38 @@ no bloquea el resto del Routine.
   sin revisión humana — publicar es una acción explícita que pide el usuario
   aparte.
 
-## 6. Routine
+## 6. Automatización
 
-Cadencia: semanal. Cada ejecución:
+Implementado como **tarea programada local** de la app de escritorio de
+Claude Code (`hardcover-blog-post`, cron `0 9 * * 1`, todos los lunes),
+**no** como Routine en la nube (CCR).
 
-1. Repetir pasos 0-5 para como mucho 1 libro nuevo (el más reciente sin post).
-2. Si no hay libros nuevos sin post, no hacer nada (no crear contenido de
-   relleno).
-3. Dejar el borrador listo en WordPress, **sin imagen destacada** (paso 3 es
+Motivo: las Routines en la nube solo pueden conectarse a MCP servers que
+sean conectores remotos de claude.ai (OAuth); el servidor `hardcover-mcp`
+está registrado en local (`claude mcp add -s local`, proceso stdio en esta
+máquina) y por tanto es invisible para una Routine en la nube. Una tarea
+programada local, en cambio, se ejecuta como una sesión normal de Claude
+Code en este proyecto, así que sí tiene acceso tanto al MCP `hardcover`
+como al conector remoto "AI Engine Wordpress".
+
+Limitación a tener en cuenta: la tarea solo se dispara si la app de
+escritorio está abierta en ese momento (si está cerrada, se ejecuta al
+siguiente arranque) — no es un cron de servidor 24/7.
+
+Cada ejecución:
+
+1. Repite pasos 0-5 para como mucho 1 libro nuevo (el más reciente sin
+   post), probando con el siguiente más reciente si el primero ya tiene
+   post.
+2. Si todos los libros recientes ya tienen post, no hace nada.
+3. Deja el borrador listo en WordPress, **sin imagen destacada** (paso 3 es
    manual, ver arriba).
-4. El aviso de que hay un borrador nuevo lo ve el usuario al revisar el
-   panel de WP o el historial de la Routine en Claude Code; no hay
-   integración de notificación (email/Slack) configurada todavía.
+4. Notifica al usuario al terminar (vía `notifyOnCompletion`); el prompt
+   completo vive en
+   `C:\Users\ivd\.claude\scheduled-tasks\hardcover-blog-post\SKILL.md`.
+
+Alternativa considerada y descartada por ahora: desplegar `hardcover-mcp`
+como servidor HTTP remoto (ej. en Vercel) y registrarlo como conector de
+claude.ai, lo que sí permitiría usar una Routine en la nube. Revisar si en
+el futuro interesa migrar a eso (más robusto, no depende de tener la app
+abierta).
