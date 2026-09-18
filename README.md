@@ -37,6 +37,16 @@ standalone.
    `node /path/to/hardcover-mcp/index.js` with `HARDCOVER_API_TOKEN` in its
    environment.
 
+### Registering with Claude Code
+
+```bash
+claude mcp add hardcover -s local -e HARDCOVER_API_TOKEN="your-token-here" -- node /path/to/hardcover-mcp/index.js
+```
+
+`-s local` keeps it scoped to your user + this project (stored outside the
+repo, never committed). Restart Claude Code (or start a new session) for the
+`hardcover_*` tools to show up.
+
 ## Tools exposed
 
 | Tool | Purpose |
