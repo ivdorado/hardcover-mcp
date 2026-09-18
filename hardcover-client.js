@@ -27,10 +27,7 @@ export class HardcoverClient {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // Hardcover expects the raw token in this header (no "Bearer " prefix
-        // per their own getting-started example), but some community tools
-        // use "Bearer <token>" — keep the raw form to match the official docs.
-        authorization: this.token,
+        authorization: `Bearer ${this.token}`,
         "user-agent": "ivdorado-hardcover-mcp/0.1 (personal use)",
       },
       body: JSON.stringify({ query, variables }),
@@ -52,7 +49,7 @@ export class HardcoverClient {
 
   async me() {
     const data = await this.request(`query { me { id username name } }`);
-    return data.me;
+    return data.me[0];
   }
 
   async searchBooks(query, limit = 10) {
