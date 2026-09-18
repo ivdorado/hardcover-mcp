@@ -1,0 +1,19 @@
+{
+  "name": "hardcover-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing your Hardcover.app library, reviews and progress to Claude.",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "hardcover-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
