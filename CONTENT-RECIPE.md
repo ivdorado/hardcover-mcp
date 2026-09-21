@@ -48,36 +48,50 @@ Replicar el patrón ya validado en el blog:
    - Cerrar con una reflexión que conecte el libro con algo más amplio.
 4. `post_excerpt` = primer párrafo del cuerpo, tal cual.
 
-## 3. Imagen de cabecera — paso manual (decisión 2026-09-18)
+## 3. Imagen de cabecera — automatizada vía Cloudflare Workers AI (2026-09-21)
 
-Se probó `mwai_image` (AI Engine) a fondo:
+`mwai_image` (AI Engine) se descartó tras agotar las vías razonables:
+"Unsupported query type" sin entorno de imagen; luego un modelo de OpenAI
+obsoleto tras cambiar a Google; luego `limit: 0` en el tier gratuito para
+dos modelos distintos de Gemini (restricción geográfica UE/EEE, no
+configurable desde el plugin).
 
-- Con el entorno inicial (Anthropic, sin imágenes) fallaba con "Unsupported
-  query type".
-- Tras configurar un entorno Google/Gemini con API key real, fallaba porque
-  `ai_images_default_model` seguía apuntando a un modelo de OpenAI
-  (`gpt-image-2`) que ya no existía en la config.
-- Corregido eso, dos modelos "gratuitos" distintos de Google
-  (`gemini-3.1-flash-image` y `gemini-2.5-flash-image`) devolvieron
-  `limit: 0` en el tier gratuito — probablemente una restricción geográfica
-  de Google para cuentas UE/EEE en generación de imágenes, no algo
-  configurable desde el plugin.
+**Solución actual**: [cloudflare-image.js](cloudflare-image.js) en la raíz
+del repo, que llama directamente a Cloudflare Workers AI (modelo
+`@cf/leonardo/lucid-origin`, elegido porque acepta JSON simple —no
+multipart como `flux-2-dev`—, soporta `width`/`height` nativos hasta 2500px
+para pedir 16:9 real, y con `guidance: 7` responde bien a instrucciones
+explícitas de "sin texto/sin logos" sin alucinar letras falsas, a
+diferencia de `flux-1-schnell`).
 
-**Decisión**: de momento la imagen de cabecera se queda como paso manual.
-El Routine deja el borrador **sin imagen destacada** (o, si se prefiere,
-con la portada oficial del libro en alta resolución como placeholder — ver
-más abajo), y el usuario añade la imagen final a mano (Canva u otra
-herramienta) antes de publicar.
+```bash
+node cloudflare-image.js "<prompt en inglés>" salida.png 1600 900
+```
 
-Fallback opcional si se quiere algo de imagen desde el primer momento:
-subir la portada oficial del libro en alta resolución (buscar en
-PlanetadeLibros/Casa del Libro; **no** usar el thumbnail de Hardcover, que
-es de baja calidad) y fijarla con `wp_set_featured_image`, dejando claro en
-el resumen que es un placeholder pendiente de sustituir.
+Requiere `CLOUDFLARE_API_TOKEN` (con permiso **Workers AI: Edit**) y
+`CLOUDFLARE_ACCOUNT_ID` en el entorno — están en `.env` (gitignored).
 
-Revisar en el futuro si activar facturación en Google Cloud (Imagen 4
-Fast, ~$0.02/imagen) para poder automatizar este paso — decisión pendiente,
-no bloquea el resto del Routine.
+Pasos:
+
+1. Construir un prompt en inglés que:
+   - describa un motivo **sugerente** del tema del libro, nunca literal ni
+     la portada,
+   - pida explícitamente paleta pastel y formato panorámico,
+   - incluya salvaguardas anti-texto: "no text, no letters, no words, no
+     logos, no branding" (los modelos de imagen tienden a alucinar
+     texto/logos en objetos como aviones, coches, edificios — cuanto más
+     explícito el prompt, menos ocurre).
+2. Ejecutar `cloudflare-image.js` con `width=1600 height=900` (16:9).
+3. Revisar la imagen generada (leerla con la herramienta de lectura) antes
+   de subirla — si tiene artefactos claros (texto ilegible, anatomía rota,
+   etc.), regenerar con el prompt ajustado en vez de subirla tal cual.
+4. Subir a WordPress: `wp_upload_request` (o `wp_upload_media` si el
+   archivo es pequeño) + `wp_set_featured_image`.
+
+Fallback si Cloudflare falla (cuota, error de red, etc.): subir la portada
+oficial del libro en alta resolución (buscar en PlanetadeLibros/Casa del
+Libro, no el thumbnail de Hardcover) como placeholder, y avisar en el
+resumen de que conviene sustituirla a mano.
 
 ## 4. Categoría y etiquetas
 
@@ -119,8 +133,8 @@ Cada ejecución:
    post), probando con el siguiente más reciente si el primero ya tiene
    post.
 2. Si todos los libros recientes ya tienen post, no hace nada.
-3. Deja el borrador listo en WordPress, **sin imagen destacada** (paso 3 es
-   manual, ver arriba).
+3. Deja el borrador listo en WordPress, **con imagen destacada generada
+   automáticamente** (ver sección 3).
 4. Notifica al usuario al terminar (vía `notifyOnCompletion`); el prompt
    completo vive en
    `C:\Users\ivd\.claude\scheduled-tasks\hardcover-blog-post\SKILL.md`.
