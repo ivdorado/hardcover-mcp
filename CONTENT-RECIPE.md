@@ -71,6 +71,12 @@ node cloudflare-image.js "<prompt en inglés>" salida.png 1600 900
 Requiere `CLOUDFLARE_API_TOKEN` (con permiso **Workers AI: Edit**) y
 `CLOUDFLARE_ACCOUNT_ID` en el entorno — están en `.env` (gitignored).
 
+**Cuota gratuita**: 10.000 "neurons"/día en el plan free de Workers AI.
+Sobra de sobra para 1 imagen/semana, pero se agota rápido si se prueban
+muchas variaciones seguidas en una sesión (error `code: 4006`,
+"you have used up your daily free allocation"). Si ocurre durante
+desarrollo/pruebas, esperar al reset diario o usar el fallback de portada.
+
 ### Fórmula del prompt (2026-09-21): motivo variable + andamiaje fijo de calidad
 
 Un primer intento (un avión suelto sobre fondo liso) quedó "desangelado".
