@@ -71,21 +71,57 @@ node cloudflare-image.js "<prompt en inglés>" salida.png 1600 900
 Requiere `CLOUDFLARE_API_TOKEN` (con permiso **Workers AI: Edit**) y
 `CLOUDFLARE_ACCOUNT_ID` en el entorno — están en `.env` (gitignored).
 
+### Fórmula del prompt (2026-09-21): motivo variable + andamiaje fijo de calidad
+
+Un primer intento (un avión suelto sobre fondo liso) quedó "desangelado".
+La lección: **la calidad/riqueza visual del resultado no debe depender del
+libro** — solo el motivo cambia de un post a otro; el nivel de detalle,
+atmósfera y profundidad debe ser siempre el mismo listón alto. Por eso el
+prompt se construye en dos partes que **siempre** van juntas:
+
+**1. Motivo variable** (cambia en cada post): 2-3 frases que describan una
+escena **sugerente** del tema/atmósfera central del libro — nunca literal,
+nunca la portada, nunca texto del libro. Ejemplos:
+- Duplicación/identidad (*La anomalía*): dos aviones idénticos cruzándose,
+  uno sólido y otro fantasma.
+- Un libro sobre el paso del tiempo: un reloj de arena disolviéndose en
+  partículas que se convierten en pájaros.
+- Un libro sobre una guerra/conflicto histórico: un campo en calma con
+  siluetas de pájaros formando una V, sin ninguna imaginería bélica gráfica.
+
+**2. Andamiaje fijo de calidad** (se añade siempre, palabra por palabra o
+muy similar, detrás del motivo variable):
+
+```
+Rich atmospheric scene with strong visual depth and layered detail —
+foreground, midground and background elements, not a flat empty
+background. Dramatic natural lighting (soft glow, gentle haze, subtle
+gradient shifts across the frame). Soft pastel-leaning color palette.
+Painterly editorial-illustration richness with fine texture, like a
+literary magazine cover, not a bare vector icon on a plain backdrop.
+No text, no letters, no words, no numbers, no logos, no branding, no
+signage of any kind anywhere in the image — leave any human-made object
+completely unmarked and plain.
+```
+
 Pasos:
 
-1. Construir un prompt en inglés que:
-   - describa un motivo **sugerente** del tema del libro, nunca literal ni
-     la portada,
-   - pida explícitamente paleta pastel y formato panorámico,
-   - incluya salvaguardas anti-texto: "no text, no letters, no words, no
-     logos, no branding" (los modelos de imagen tienden a alucinar
-     texto/logos en objetos como aviones, coches, edificios — cuanto más
-     explícito el prompt, menos ocurre).
-2. Ejecutar `cloudflare-image.js` con `width=1600 height=900` (16:9).
-3. Revisar la imagen generada (leerla con la herramienta de lectura) antes
-   de subirla — si tiene artefactos claros (texto ilegible, anatomía rota,
-   etc.), regenerar con el prompt ajustado en vez de subirla tal cual.
-4. Subir a WordPress: `wp_upload_request` (o `wp_upload_media` si el
+1. Escribir el motivo variable para el libro en cuestión.
+2. Concatenarlo con el andamiaje fijo de arriba (motivo primero, andamiaje
+   después) para formar el prompt final en inglés.
+3. Ejecutar `cloudflare-image.js` con `width=1600 height=900` (16:9).
+4. Revisar la imagen generada (leerla con la herramienta de lectura) antes
+   de subirla. Fallos conocidos y qué hacer:
+   - **Texto/logo falso alucinado** (ocurre sobre todo en aviones, coches,
+     edificios, ropa): regenerar una vez reforzando aún más la instrucción
+     anti-texto en el motivo variable (ej. "completely blank fuselage,
+     no visible markings of any kind").
+   - **Artefacto de costura/banda vertical u horizontal** en el cielo o
+     fondo: regenerar (a veces basta cambiar ligeramente la redacción del
+     motivo para que el modelo re-muestree la composición).
+   - Si tras 2 intentos sigue habiendo artefactos claros, usar el mejor de
+     los dos en vez de seguir gastando llamadas.
+5. Subir a WordPress: `wp_upload_request` (o `wp_upload_media` si el
    archivo es pequeño) + `wp_set_featured_image`.
 
 Fallback si Cloudflare falla (cuota, error de red, etc.): subir la portada
