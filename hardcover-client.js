@@ -28,7 +28,7 @@ export class HardcoverClient {
       headers: {
         "Content-Type": "application/json",
         authorization: `Bearer ${this.token}`,
-        "user-agent": "ivdorado-hardcover-mcp/0.1 (personal use)",
+        "user-agent": "hardcover-mcp/0.1",
       },
       body: JSON.stringify({ query, variables }),
     });

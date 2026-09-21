@@ -4,9 +4,8 @@
 [![Node.js >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
 MCP server exposing your own [Hardcover.app](https://hardcover.app) library,
-reviews and reading progress as tools — built for feeding real, on-brand
-book context into the `ivdorado.es` post-generation project, but usable
-standalone.
+reviews and reading progress as tools — for feeding real, personal book
+context into an LLM chat, an automation, or anything else that speaks MCP.
 
 ## Setup
 
