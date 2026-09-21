@@ -3,9 +3,27 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
-MCP server exposing your own [Hardcover.app](https://hardcover.app) library,
-reviews and reading progress as tools — for feeding real, personal book
-context into an LLM chat, an automation, or anything else that speaks MCP.
+An MCP server that exposes your own [Hardcover.app](https://hardcover.app)
+library, reviews and reading progress as tools — so any MCP-compatible
+LLM client (Claude, and others) can answer questions about your reading
+life, or use it as real, personal context for something else you're
+building (a blog automation, a yearly reading recap, whatever).
+
+It's a thin wrapper around Hardcover's GraphQL API: no database, no
+server to host, just a stdio process your MCP client launches.
+
+## What you can do with it
+
+Once connected, you can ask your LLM client things like:
+
+- *"What am I currently reading, and how far in am I?"*
+- *"List the sci-fi books I've read and rated 4 stars or higher."*
+- *"Search Hardcover for books by Ted Chiang."*
+- *"Pull my written reviews from the last few months — I want to spot
+  patterns in what I complain about."*
+
+The client calls the tools below, gets back real JSON from your Hardcover
+account, and reasons over it like any other tool result.
 
 ## Setup
 
@@ -46,6 +64,27 @@ claude mcp add hardcover -s local -e HARDCOVER_API_TOKEN="your-token-here" -- no
 repo, never committed). Restart Claude Code (or start a new session) for the
 `hardcover_*` tools to show up.
 
+### Registering with Claude Desktop (or any client using `mcpServers` JSON)
+
+Add this to your client's MCP config file (for Claude Desktop:
+`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "hardcover": {
+      "command": "node",
+      "args": ["/path/to/hardcover-mcp/index.js"],
+      "env": {
+        "HARDCOVER_API_TOKEN": "your-token-here"
+      }
+    }
+  }
+}
+```
+
+Restart the client for the `hardcover_*` tools to show up.
+
 ## Tools exposed
 
 | Tool | Purpose |
@@ -56,6 +95,23 @@ repo, never committed). Restart Claude Code (or start a new session) for the
 | `hardcover_get_library` | Your books, optionally filtered by status |
 | `hardcover_currently_reading` | Currently-reading books with page progress |
 | `hardcover_get_reviews` | Your own written reviews/ratings |
+
+### Example: `hardcover_currently_reading`
+
+Response shape (trimmed):
+
+```json
+[
+  {
+    "user_book_reads": [{ "progress_pages": 210, "started_at": "2026-08-01" }],
+    "book": {
+      "title": "Project Hail Mary",
+      "pages": 476,
+      "contributions": [{ "author": { "name": "Andy Weir" } }]
+    }
+  }
+]
+```
 
 ## Notes / constraints from Hardcover's API terms
 
@@ -81,3 +137,10 @@ repo, never committed). Restart Claude Code (or start a new session) for the
 - No write operations (e.g. marking a book as read) — read-only by design
   for now, add mutations later if you want the automation to log books too.
 - No retry/backoff on `429`.
+
+## Contributing
+
+Issues and PRs welcome — this started as a personal tool, so there are
+rough edges (see *Known gaps* above). If you build something on top of it
+(a blog pipeline, a reading-stats dashboard, whatever), I'd love to hear
+about it.
