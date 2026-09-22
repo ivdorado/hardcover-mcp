@@ -95,6 +95,10 @@ Restart the client for the `hardcover_*` tools to show up.
 | `hardcover_get_library` | Your books, optionally filtered by status |
 | `hardcover_currently_reading` | Currently-reading books with page progress |
 | `hardcover_get_reviews` | Your own written reviews/ratings |
+| `hardcover_recently_read` | Books you've finished, most recently read first |
+| `hardcover_get_lists` | Your Hardcover lists (name, description, book count) |
+| `hardcover_get_list_books` | Books inside one of your lists, in list order |
+| `hardcover_reading_goal` | Your reading goal(s) and current progress |
 
 ### Example: `hardcover_currently_reading`
 
@@ -126,7 +130,8 @@ Response shape (trimmed):
   reading your own data into a chat to help you draft — but keep in mind if
   this ever becomes a packaged product.
 - Rate-limit headers (`RateLimit`, `RateLimit-Policy`) come back on every
-  response if you want to add backoff logic later; not wired up here yet.
+  response; on a `429` the client also retries automatically (honoring
+  `Retry-After` if present, otherwise exponential backoff), up to 3 times.
 
 ## Known gaps (skeleton, not finished)
 
@@ -134,9 +139,8 @@ Response shape (trimmed):
 - `search` endpoint's exact result shape wasn't fully documented publicly at
   time of writing — `hardcover_search_books` returns the raw `results` field
   as-is; you may need to adjust parsing once you see a live response.
-- No write operations (e.g. marking a book as read) — read-only by design
-  for now, add mutations later if you want the automation to log books too.
-- No retry/backoff on `429`.
+- No write operations (e.g. marking a book as read, updating progress,
+  writing a review) — read-only by design for now.
 
 ## Contributing
 

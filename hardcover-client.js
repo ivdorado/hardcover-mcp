@@ -22,7 +22,7 @@ export class HardcoverClient {
     this.token = token;
   }
 
-  async request(query, variables = {}) {
+  async request(query, variables = {}, attempt = 0) {
     const res = await fetch(ENDPOINT, {
       method: "POST",
       headers: {
@@ -32,6 +32,15 @@ export class HardcoverClient {
       },
       body: JSON.stringify({ query, variables }),
     });
+
+    if (res.status === 429 && attempt < 3) {
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : 500 * 2 ** attempt; // 500ms, 1s, 2s
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return this.request(query, variables, attempt + 1);
+    }
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");
@@ -151,5 +160,94 @@ export class HardcoverClient {
       { userId, limit, offset }
     );
     return data.user_books;
+  }
+
+  async getRecentlyRead({ userId, limit = 20 }) {
+    const data = await this.request(
+      `query RecentlyRead($userId: Int!, $limit: Int!) {
+        user_books(
+          where: { user_id: { _eq: $userId }, status_id: { _eq: ${STATUS.READ} } }
+          order_by: { last_read_date: desc_nulls_last }
+          limit: $limit
+        ) {
+          rating
+          last_read_date
+          review
+          book {
+            id
+            title
+            pages
+            image { url }
+            contributions { author { name } }
+          }
+        }
+      }`,
+      { userId, limit }
+    );
+    return data.user_books;
+  }
+
+  async getLists({ userId }) {
+    const data = await this.request(
+      `query Lists($userId: Int!) {
+        lists(where: { user_id: { _eq: $userId } }, order_by: { name: asc }) {
+          id
+          name
+          description
+          slug
+          books_count
+          public
+        }
+      }`,
+      { userId }
+    );
+    return data.lists;
+  }
+
+  async getListBooks({ listId, limit = 50, offset = 0 }) {
+    const data = await this.request(
+      `query ListBooks($listId: Int!, $limit: Int!, $offset: Int!) {
+        list_books(
+          where: { list_id: { _eq: $listId } }
+          order_by: { position: asc }
+          limit: $limit
+          offset: $offset
+        ) {
+          position
+          book {
+            id
+            title
+            pages
+            release_date
+            image { url }
+            contributions { author { name } }
+          }
+        }
+      }`,
+      { listId, limit, offset }
+    );
+    return data.list_books;
+  }
+
+  async getReadingGoals({ userId, activeOnly = true }) {
+    const where = activeOnly
+      ? `{ user_id: { _eq: $userId }, state: { _eq: "active" } }`
+      : `{ user_id: { _eq: $userId } }`;
+    const data = await this.request(
+      `query Goals($userId: Int!) {
+        goals(where: ${where}, order_by: { start_date: desc }) {
+          id
+          goal
+          progress
+          metric
+          start_date
+          end_date
+          state
+          description
+        }
+      }`,
+      { userId }
+    );
+    return data.goals;
   }
 }

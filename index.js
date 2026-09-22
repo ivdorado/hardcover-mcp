@@ -90,6 +90,48 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: "hardcover_recently_read",
+    description:
+      "List books you've finished, most recently read first (by last_read_date).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", description: "Default 20." },
+      },
+    },
+  },
+  {
+    name: "hardcover_get_lists",
+    description: "List your Hardcover lists (name, description, book count).",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "hardcover_get_list_books",
+    description: "Get the books in one of your lists, in list order.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        listId: { type: "integer", description: "List id (from hardcover_get_lists)." },
+        limit: { type: "integer", description: "Default 50." },
+        offset: { type: "integer", description: "Default 0." },
+      },
+      required: ["listId"],
+    },
+  },
+  {
+    name: "hardcover_reading_goal",
+    description: "Get your reading goal(s) and current progress.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        activeOnly: {
+          type: "boolean",
+          description: "Only return the currently active goal (default true).",
+        },
+      },
+    },
+  },
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -148,6 +190,40 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           offset: args.offset ?? 0,
         });
         return textResult(reviews);
+      }
+
+      case "hardcover_recently_read": {
+        const userId = await resolveUserId();
+        const books = await client.getRecentlyRead({
+          userId,
+          limit: args.limit ?? 20,
+        });
+        return textResult(books);
+      }
+
+      case "hardcover_get_lists": {
+        const userId = await resolveUserId();
+        const lists = await client.getLists({ userId });
+        return textResult(lists);
+      }
+
+      case "hardcover_get_list_books": {
+        if (!args.listId) throw new Error("Provide listId.");
+        const books = await client.getListBooks({
+          listId: args.listId,
+          limit: args.limit ?? 50,
+          offset: args.offset ?? 0,
+        });
+        return textResult(books);
+      }
+
+      case "hardcover_reading_goal": {
+        const userId = await resolveUserId();
+        const goals = await client.getReadingGoals({
+          userId,
+          activeOnly: args.activeOnly ?? true,
+        });
+        return textResult(goals);
       }
 
       default:
